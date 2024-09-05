@@ -1,6 +1,9 @@
 import './App.css';
 import {useState, useEffect} from 'react'
 
+
+//test for github
+
 function App() {
 
   const [questions, setQuestions] = useState([]);
@@ -27,7 +30,7 @@ function App() {
           setQuizFinished(false);
           setCurrentQuestionIndex(0);
           setScore(0);
-          setHasAnswered(false);
+          setHasAnswered(false); 
         }
         else{
           alert("error here")
@@ -42,6 +45,8 @@ function App() {
         setLoading(false);
       });
   };
+
+  
 
   const fetchExplanation = (question, userAnswer, correctAnswer) => {
     fetch(`http://localhost:5000/api/explanation?question=${encodeURIComponent(question)}&userAnswer=${encodeURIComponent(userAnswer)}&correctAnswer=${encodeURIComponent(correctAnswer)}`)
