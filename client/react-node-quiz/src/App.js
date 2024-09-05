@@ -1,8 +1,6 @@
 import './App.css';
 import {useState, useEffect} from 'react'
-
-
-//test for github
+import searchIcon from './search.png'
 
 function App() {
 
@@ -15,46 +13,68 @@ function App() {
   const [topic, setTopic] = useState("")
   const [explanation, setExplanation] = useState('');
   const [hasAnswered, setHasAnswered] = useState(false)
+  const [loadingExplanation, setLoadingExplanation] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const fetchQuestions = (selectedTopic) => {
+  const fetchQuestions = (selectedTopic, tries=0) => {
+    
+    setErrorMessage('');
+    if (tries >= 5){
+      setErrorMessage("Error fetching questions. Check your spelling and try again.")
+      tries = 0
+      setLoading(false)
+      setTopic("")
+      return
+    }
+    
     setLoading(true);
 
+
+    if (selectedTopic) {
     fetch(`http://localhost:5000/api/questions?topic=${encodeURIComponent(selectedTopic)}`)
       .then((res) => res.json())
       .then((data) => {
+
         
-        if (data && data.questions) {
+        if (data && data.questions && data.questions.length > 0) {
           setQuestions(data.questions);
           setLoading(false);
           setQuizStarted(true);
           setQuizFinished(false);
           setCurrentQuestionIndex(0);
           setScore(0);
-          setHasAnswered(false); 
+          setHasAnswered(false);
         }
         else{
-          alert("error here")
-          setTimeout(() => fetchQuestions(selectedTopic), 100)
+          //alert("error here")
+          setTimeout(() => fetchQuestions(selectedTopic, (tries + 1)), 30)
         }
         
       })
       .catch((err) => {
         alert("error")
-        console.error('Error fetching questions:', err);
-        setTimeout(() => fetchQuestions(selectedTopic), 100)
+        console.log('Error fetching questions:', err);
+        setTimeout(() => fetchQuestions(selectedTopic, (tries + 1)), 30)
         setLoading(false);
       });
+      }
+      else
+      {
+        setLoading(false)
+      }
   };
 
-  
-
   const fetchExplanation = (question, userAnswer, correctAnswer) => {
+    setLoadingExplanation(true)
+
     fetch(`http://localhost:5000/api/explanation?question=${encodeURIComponent(question)}&userAnswer=${encodeURIComponent(userAnswer)}&correctAnswer=${encodeURIComponent(correctAnswer)}`)
       .then((res) => res.json())
       .then((data) => {
         setExplanation(data.explanation);
+        setLoadingExplanation(false)
       })
       .catch((err) => {
+        setLoadingExplanation(false)
         console.error('Error fetching explanation:', err);
       });
   };
@@ -73,18 +93,27 @@ function App() {
 
   const onFinish = () => {
     setQuizFinished(true)
+    setExplanation("")
   }
 
+
+  const [selectedAnswer, setSelectedAnswer] = useState("")
+
   const handleAnswer = (option) => {
+    setSelectedAnswer(option)
     const currentQuestion = questions[currentQuestionIndex];
     setHasAnswered(true)
 
-    if (option === currentQuestion.answer) {
+    if (currentQuestion) {
+    if (option == currentQuestion.answer) {
       setScore(score + 1);
       setExplanation("Correct!")
     } else {
       fetchExplanation(currentQuestion.question, option, currentQuestion.answer);
     }
+  } else {
+    alert("ERROR LINE 115")
+  }
 
     if (currentQuestionIndex < questions.length - 1) {
       // setCurrentQuestionIndex(currentQuestionIndex + 1); 
@@ -97,30 +126,39 @@ function App() {
 
 
   return (
-    <div className='App'>
+    <div className='quiz-container'>
+    {errorMessage && (
+          <div className='error-banner'>
+          <p>{errorMessage}</p>
+          <button className='close-button' onClick={() => {setErrorMessage("")}}>X</button>
+        </div>
+      )}
       {!quizStarted || quizFinished ? (
         <>
           <div>
-            <h3>Search a topic to get started!</h3>
+            <h3 className='quiz-title'>Search a topic to get started!</h3>
           </div>
-          <input 
-            type="text" 
-            placeholder="Enter a topic" 
-            value={topic} 
-            onChange={(e) => setTopic(e.target.value)} 
-          />
-          <button onClick={() => fetchQuestions(topic)}>
-            {quizFinished ? "Start New Quiz" : "Start Quiz"}
-          </button>
+          <div className="search-container">
+            <input
+              type="text"
+              className="quiz-input"
+              placeholder="Enter a topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+            />
+            <button className="start-button" onClick={() => fetchQuestions(topic)}>
+              <img src={searchIcon} alt="Search" className='search-icon' />
+            </button>
+          </div>
 
-          <div>
+          <div className='quiz-loader'>
             {loading && (
-              <h2>Loading...</h2>
+              <div className="loader"></div>
             )}
           </div>
 
           {quizFinished && (
-            <div>
+            <div className='quiz-results'>
               <p>Quiz Finished</p>
               <p>Your score: {score}/{questions.length}</p>
               <p>You got {score} out of {questions.length} questions correct</p>
@@ -129,35 +167,45 @@ function App() {
         </>
       ) : (
         loading ? (
-          <p>Loading questions...</p>
+          <p className='quiz-loader'>Loading questions...</p>
         ) : (
-          <div>
-            <h2>{questions[currentQuestionIndex].question}</h2>
-            <div>
-              {questions[currentQuestionIndex].options.map((option, index) => (
-                <button key={index} onClick={() => handleAnswer(option)} disabled={hasAnswered}>
-                  {option}
-                </button>
-              ))}
+          questions.length > 0 && questions[currentQuestionIndex] && (
+            <div className='quiz-box'>
+              <h2 className='question-text'>{questions[currentQuestionIndex].question}</h2>
+              <div className='answer-box'>
+                {questions[currentQuestionIndex].options.map((option, index) => (
+                  <button
+                    className={`answer-button ${
+                      hasAnswered ?
+                        questions[currentQuestionIndex].answer === option ? "correct-answer" :
+                        selectedAnswer === option ? "wrong-answer" : ""
+                        : ""
+                    }`}
+                    key={index}
+                    onClick={() => handleAnswer(option)}
+                    disabled={hasAnswered}
+                  >
+                    {option}
+                  </button>
+                ))}
 
-            {hasAnswered && (
-              <>
-                {(currentQuestionIndex < questions.length - 1) ? (
-                  <button onClick={()=>{onNext()}}>Next</button>
-                ) : (
-                  <button onClick={()=>{onFinish()}}>Finish</button>
+                {hasAnswered && (
+                  <>
+                    {(currentQuestionIndex < questions.length - 1) ? (
+                      <button className="next-button" onClick={onNext}>→</button>
+                    ) : (
+                      <button className="next-button" onClick={onFinish}>Finish</button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-              
-            </div>
-            {explanation && (
-              <div>
-                <h3>Explanation:</h3>
+              </div>
+
+              <div className="explanation-box">
+                {loadingExplanation && <div className="loader"></div>}
                 <p>{explanation}</p>
               </div>
-            )}
-          </div>
+            </div>
+          )
         )
       )}
     </div>
