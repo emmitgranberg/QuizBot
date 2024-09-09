@@ -47,7 +47,7 @@
   color: #000;
   border: none;
   border-radius: 5px;
-  transition: background-color 0.3s ease, transform 0.1s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .answer-button:hover {
@@ -84,7 +84,13 @@
   color: #fff;
   border: none;
   border-radius: 5px;
-  transition: background-color 0.3s ease, transform 0.1s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.next-button:disabled {
+  background-color: #cccccc;
+  color: #616161;
+  cursor: not-allowed;
 }
 
 .next-button:hover {
@@ -212,4 +218,30 @@
 
 .close-button:hover {
   color: #ffcccc;
+}
+
+.quiz-title, .question-text, .answer-button, .next-button, .explanation-box, .quiz-results {
+  font-family: 'Patrick Hand', cursive, sans-serif;
+}
+
+.suggested-topic-button {
+  background-color: #f4f4f4; /* Same color as the question buttons */
+  color: #333; /* Text color to ensure readability */
+  border: 1px solid #ddd; /* Border color for better visibility */
+  border-radius: 5px; /* Rounded corners for a consistent look */
+  padding: 10px 20px; /* Same padding as question buttons */
+  margin: 5px; /* Spacing between buttons */
+  cursor: pointer; /* Pointer cursor on hover */
+  font-size: 16px; /* Consistent font size */
+  transition: background-color 0.3s, border-color 0.3s; /* Smooth color transition */
+}
+
+.suggested-topic-button:hover {
+  background-color: #e0e0e0; /* Lighter shade on hover */
+  border-color: #ccc; /* Lighter border on hover */
+}
+
+.suggested-topic-button:active {
+  background-color: #d0d0d0; /* Darker shade when pressed */
+  border-color: #bbb; /* Darker border when pressed */
 }

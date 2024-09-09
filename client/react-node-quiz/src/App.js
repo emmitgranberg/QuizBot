@@ -15,9 +15,10 @@ function App() {
   const [hasAnswered, setHasAnswered] = useState(false)
   const [loadingExplanation, setLoadingExplanation] = useState(false)
   const [errorMessage, setErrorMessage] = useState('');
+  const [wrongQuestionTypes, setWrongQuestionTypes] = useState([]);
+
 
   const fetchQuestions = (selectedTopic, tries=0) => {
-    
     setErrorMessage('');
     if (tries >= 5){
       setErrorMessage("Error fetching questions. Check your spelling and try again.")
@@ -109,6 +110,7 @@ function App() {
       setScore(score + 1);
       setExplanation("Correct!")
     } else {
+      setWrongQuestionTypes(prevTypes => [...prevTypes, currentQuestion.type]);
       fetchExplanation(currentQuestion.question, option, currentQuestion.answer);
     }
   } else {
@@ -157,12 +159,28 @@ function App() {
             )}
           </div>
 
-          {quizFinished && (
+          {(quizFinished && !loading) && (
             <div className='quiz-results'>
-              <p>Quiz Finished</p>
               <p>Your score: {score}/{questions.length}</p>
-              <p>You got {score} out of {questions.length} questions correct</p>
+
+              <div>
+                <h4>Consider studying these concepts:</h4>
+                  {Array.from(new Set(wrongQuestionTypes)).map((type, index) => (
+                <button 
+                  className='suggested-topic-button'
+                  key={index} 
+                  onClick={() => {
+                    fetchQuestions(type)
+                    setWrongQuestionTypes(prevTypes => prevTypes.filter(item => item !== type))
+                  }}>
+                  {type}
+                </button>
+          ))}
+              </div>
+
             </div>
+            
+            
           )}
         </>
       ) : (
@@ -192,9 +210,9 @@ function App() {
                 {hasAnswered && (
                   <>
                     {(currentQuestionIndex < questions.length - 1) ? (
-                      <button className="next-button" onClick={onNext}>→</button>
+                      <button className="next-button" onClick={onNext} disabled={loadingExplanation}>→</button>
                     ) : (
-                      <button className="next-button" onClick={onFinish}>Finish</button>
+                      <button className="next-button" onClick={onFinish} disabled={loadingExplanation}>Finish</button>
                     )}
                   </>
                 )}
