@@ -1,5 +1,5 @@
 import './App.css';
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef } from 'react'
 import searchIcon from './search.png'
 
 function App() {
@@ -16,6 +16,12 @@ function App() {
   const [loadingExplanation, setLoadingExplanation] = useState(false)
   const [errorMessage, setErrorMessage] = useState('');
   const [wrongQuestionTypes, setWrongQuestionTypes] = useState([]);
+  const [chatText, setChatText] = useState("");
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatVisible, setChatVisible] = useState(false);
+
+  const chatBoxRef = useRef(null);
+
 
 
   const fetchQuestions = (selectedTopic, tries=0) => {
@@ -126,8 +132,57 @@ function App() {
   };
 
 
+  const handleChatSend = () => {
+    if (chatText.trim()) {
+      setChatMessages(prev => [...prev, { type: 'user', text: chatText }]);
+      fetchChatResponse(chatText);
+      setChatText(""); 
+
+    
+
+    }
+  };
+
+  const fetchChatResponse = (message) => {
+    fetch(`http://localhost:5000/api/chat?message=${encodeURIComponent(message)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data); // Check the structure of the response
+        setChatMessages(prev => [...prev, { type: 'ai', text: data.explanation }]);
+        
+      })
+      .catch((err) => {
+        console.error('Error fetching chat response:', err);
+      });
+
+  };
+
+  useEffect(() => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  const toggleChat = () => {
+    setChatVisible(!chatVisible);
+  };
+
+  useEffect(() => {
+    if (chatVisible && chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight; 
+    }
+  }, [chatVisible]);
+
+
+
 
   return (
+    <div className='main-container'>
     <div className='quiz-container'>
     {errorMessage && (
           <div className='error-banner'>
@@ -147,6 +202,7 @@ function App() {
               placeholder="Enter a topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchQuestions(topic)}
             />
             <button className="start-button" onClick={() => fetchQuestions(topic)}>
               <img src={searchIcon} alt="Search" className='search-icon' />
@@ -188,6 +244,7 @@ function App() {
           <p className='quiz-loader'>Loading questions...</p>
         ) : (
           questions.length > 0 && questions[currentQuestionIndex] && (
+            <>
             <div className='quiz-box'>
               <h2 className='question-text'>{questions[currentQuestionIndex].question}</h2>
               <div className='answer-box'>
@@ -223,10 +280,45 @@ function App() {
                 <p>{explanation}</p>
               </div>
             </div>
+      
+            </>
           )
         )
       )}
     </div>
+    
+        
+        {chatVisible && (
+          <>
+          <div className='chat-container'>
+        <div className='chat-box' ref={chatBoxRef}>
+          {chatMessages.map((msg, index) => (
+            <div key={index} className={msg.type === 'user' ? 'user-message' : 'ai-message'}>
+              {msg.text || "Error fetching response"}
+            </div>
+          ))}
+        </div>
+        <div className='chat-input-container'>
+          <input
+            type='text'
+            className='chat-input'
+            placeholder='Chat with an AI tutor...'
+            value={chatText}
+            onChange={(e) => setChatText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+              />
+              <button className='chat-send-button' onClick={handleChatSend}>Send</button>
+          </div>
+          </div>
+          </>
+          
+          )}
+          <button onClick={toggleChat} className='toggle-chat-button'>
+          {chatVisible ? 'Hide Chat' : 'Show Chat'}
+        </button>
+        
+            </div>
+    
   );
 }
 

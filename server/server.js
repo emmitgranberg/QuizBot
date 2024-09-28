@@ -2,6 +2,7 @@ const Groq = require("groq-sdk");
 const express = require("express");
 const cors = require("cors");
 
+
 GROQ_API_KEY = "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"
 
 const app = express();
@@ -115,6 +116,32 @@ app.get("/api/explanation", async (req, res) => {
         res.status(500).json({ error: 'Failed to generate explanation' });
     }
 });
+
+app.get('/api/chat', async (req, res) => {
+    const { message } = req.query;
+    const groq = new Groq({ apiKey: GROQ_API_KEY });
+  
+    try {
+        const completion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: `${message}`
+                },
+            ],
+            model: "llama3-8b-8192",
+        });
+
+        const aiResponse = completion.choices[0].message.content;
+        res.json({ explanation: aiResponse });
+
+    } catch (error) {
+        console.error('Error fetching explanation from GroqCloud:', error);
+        res.status(500).json({ error: 'Failed to generate explanation' });
+    }
+  });
+  
+
 
 app.listen(PORT, () => {
     console.log("Server running on port 5000");
